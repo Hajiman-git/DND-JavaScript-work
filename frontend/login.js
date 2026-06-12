@@ -5,6 +5,16 @@ document.getElementById('loginForm').onsubmit = async (e) => {
     
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+
+    if(xss(username) || xss(password)){
+
+        alert("Запрещено")
+
+        return;
+
+    }
+
+    
     
     const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -21,3 +31,10 @@ document.getElementById('loginForm').onsubmit = async (e) => {
         alert('Ошибка!');
     }
 };
+
+
+function xss(xssString){
+    const symbols = ["<",">","/",];
+    return symbols.some(symbol => xssString.includes(symbol));
+
+}

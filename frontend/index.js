@@ -1,5 +1,9 @@
 const API = 'http://localhost:3000';
 
+
+let allProducts = [];
+let filteredProducts = [];
+
 async function checkUser() {
     const token = localStorage.getItem('token');
     
@@ -21,13 +25,13 @@ async function checkUser() {
                 }
             } else {
                 localStorage.removeItem('token');
-                document.getElementById('userInfo').innerHTML = `<a href="/login.html">Войти</a>`;
+                document.getElementById('userInfo').innerHTML = `<a href="/login.html" class="login-link">Войти</a>`;
             }
         } catch (error) {
-            document.getElementById('userInfo').innerHTML = `<a href="/login.html">Войти</a>`;
+            document.getElementById('userInfo').innerHTML = `<a href="/login.html" class="login-link">Войти</a>`;
         }
     } else {
-        document.getElementById('userInfo').innerHTML = `<a href="/login.html">Войти</a>`;
+        document.getElementById('userInfo').innerHTML = `<a href="/login.html" class="login-link">Войти</a>`;
     }
 }
 
@@ -40,9 +44,12 @@ async function loadProducts() {
     try {
         const res = await fetch(`${API}/products`);
         const products = await res.json();
+
+        allProducts = products;
+        filteredProducts = [...allProducts];
         
-        const container = document.getElementById('products');
-        container.innerHTML = '';
+        displayProducts(filteredProducts);
+        updateFilterStats();
         
         for (let p of products) {
             container.innerHTML += `
@@ -57,6 +64,91 @@ async function loadProducts() {
     } catch (error) {
         console.error('Ошибка:', error);
     }
+}
+
+
+function displayProducts(products) {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
+    
+    if (products.length === 0) {
+        container.innerHTML = '<div class="no-results">Товаров не найдено</div>';
+        return;
+    }
+    
+    for (let p of products) {
+        container.innerHTML += `
+            <div class="card">
+                <h3>${escapeHtml(p.name)}</h3>
+                <p class="price">${p.price.toLocaleString()} ₽</p>
+                <p class="stock">В наличии: ${p.stock_quantity} шт.</p>
+                <button onclick="buyProduct(${p.id})">Купить</button>
+            </div>
+        `;
+    }
+}
+
+function filterProducts() {
+    let result = [...allProducts];
+    
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (searchTerm) {
+        result = result.filter(p => p.name.toLowerCase().includes(searchTerm));
+    }
+    
+    const priceFilter = document.getElementById('priceFilter').value;
+    if (priceFilter !== 'all') {
+        const [min, max] = priceFilter.split('-').map(Number);
+        result = result.filter(p => p.price >= min && p.price <= max);
+    }
+    
+    
+    const sortFilter = document.getElementById('sortFilter').value;
+    switch (sortFilter) {
+        case 'name_asc':
+            result.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+        case 'name_desc':
+            result.sort((a, b) => b.name.localeCompare(a.name));
+            break;
+        case 'price_asc':
+            result.sort((a, b) => a.price - b.price);
+            break;
+        case 'price_desc':
+            result.sort((a, b) => b.price - a.price);
+            break;
+    }
+    
+    filteredProducts = result;
+    displayProducts(filteredProducts);
+    updateFilterStats();
+}
+
+function updateFilterStats() {
+    const statsDiv = document.getElementById('filterStats');
+    const total = allProducts.length;
+    const shown = filteredProducts.length;
+    
+    if (total === shown) {
+        statsDiv.innerHTML = `Показано ${total} товаров`;
+    } else {
+        statsDiv.innerHTML = `Найдено ${shown} из ${total} товаров`;
+    }
+}
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('priceFilter').value = 'all';
+    document.getElementById('sortFilter').value = 'name_asc';
+    document.getElementById('stockFilter').value = 'all';
+    
+    filterProducts();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 

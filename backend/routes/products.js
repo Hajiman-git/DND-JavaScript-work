@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -15,7 +13,14 @@ async function isAdmin(token) {
 
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM products');
+        const result = await pool.query(
+            `SELECT p.*, array_agg(DISTINCT t.name) as tags
+             FROM products p
+             LEFT JOIN product_tags pt ON pt.product_id = p.id
+             LEFT JOIN tags t ON t.id = pt.tag_id
+             GROUP BY p.id
+             ORDER BY p.id`
+        );
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -29,12 +34,12 @@ router.post('/', async (req, res) => {
         return res.status(403).json({ error: 'Нет прав' });
     }
     
-    const { name, price, stock_quantity } = req.body;
+    const { name, price, stock_quantity, description } = req.body;
     
     try {
         const result = await pool.query(
-            'INSERT INTO products (name, price, stock_quantity) VALUES ($1, $2, $3) RETURNING *',
-            [name, price, stock_quantity]
+            'INSERT INTO products (name, price, stock_quantity, description) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, price, stock_quantity, description || '']
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -50,12 +55,12 @@ router.put('/:id', async (req, res) => {
     }
     
     const id = req.params.id;
-    const { name, price, stock_quantity } = req.body;
+    const { name, price, stock_quantity, description } = req.body;
     
     try {
         const result = await pool.query(
-            'UPDATE products SET name=$1, price=$2, stock_quantity=$3 WHERE id=$4 RETURNING *',
-            [name, price, stock_quantity, id]
+            'UPDATE products SET name=$1, price=$2, stock_quantity=$3, description=$4 WHERE id=$5 RETURNING *',
+            [name, price, stock_quantity, description || '', id]
         );
         
         if (result.rows.length === 0) {

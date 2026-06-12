@@ -116,13 +116,13 @@ function renderOrdersList(orders) {
 
 function getStatusIcon(status) {
     const icons = {
-        'Новый': '📋',
-        'В обработке': '⚙️',
-        'Доставка': '🚚',
-        'Выполнен': '✅',
-        'Отменен': '❌'
+        'Новый': 'Новый',
+        'В обработке': 'Обработка',
+        'Доставка': 'Доставка',
+        'Выполнен': 'Доставлен',
+        'Отменен': 'Отменен'
     };
-    return icons[status] || '📌';
+    return icons[status] || '';
 }
 
 function dragStart(event) {
@@ -141,7 +141,10 @@ function dragStart(event) {
 
 function dragEnd(event) {
     const card = event.target.closest('.order-card');
-    if (card) card.classList.remove('dragging');
+    if (card){
+        card.classList.remove('dragging');
+    }
+    
     draggedOrder = null;
 }
 
